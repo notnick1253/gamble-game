@@ -415,14 +415,14 @@ def switch():
         right
     )
     fünf_x = die_fünf.get_width()
-    
+     
     screen.blit(
         die_drei,
-        (window_x/2-15-drei_x/2, 13)
+        (int(window_x/2-15-drei_x/2), 13)
         )
     screen.blit(
         die_fünf,
-        (window_x/2+15-fünf_x/2, 13)
+        (int(window_x/2+15-fünf_x/2), 13)
         )
     
 
