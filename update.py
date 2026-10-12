@@ -8,8 +8,8 @@ from packaging.version import Version, InvalidVersion
 
 AKTUELLE_VERSION = "1.0.0"
 
-VERSION_URL = "https://raw.githubusercontent.com/BENUTZER/REPO/main/updates/version.txt"
-UPDATE_URL = "https://raw.githubusercontent.com/BENUTZER/REPO/main/updates/app.py"
+VERSION_URL = "https://raw.githubusercontent.com/notnick1253/gamble-game/main/version.txt"
+UPDATE_URL = "https://raw.githubusercontent.com/notnick1253/gamble-game/main/main.py"
 
 
 def jetzt_updaten():
