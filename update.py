@@ -52,9 +52,3 @@ def update_check():
 
     except (requests.RequestException, InvalidVersion) as e:
         print(f"Update-Prüfung fehlgeschlagen: {e}")
-
-
-if __name__ == "__main__":
-    update_check()
-    print("\n--- Willkommen in deiner App ---")
-    print("App läuft im Normalbetrieb...")
