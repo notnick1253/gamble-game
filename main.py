@@ -1,5 +1,8 @@
 import random
 import pygame
+from update import update_check
+
+update_check()
 
 pygame.init()
 
