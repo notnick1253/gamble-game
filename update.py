@@ -1,54 +1,99 @@
+import json
 import os
 import sys
 import tempfile
 from pathlib import Path
 
 import requests
-from packaging.version import Version, InvalidVersion
-
-AKTUELLE_VERSION = "1.0.0"
-
-VERSION_URL = "https://raw.githubusercontent.com/notnick1253/gamble-game/main/version.txt"
-UPDATE_URL = "https://raw.githubusercontent.com/notnick1253/gamble-game/main/main.py"
+from packaging.version import InvalidVersion, Version
 
 
-def jetzt_updaten():
-    response = requests.get(UPDATE_URL, timeout=15)
+REPO_URL = "https://raw.githubusercontent.com/notnick1253/gamble-game/main"
+VERSION_URL = f"{REPO_URL}/version.txt"
+MANIFEST_URL = f"{REPO_URL}/manifest.json"
+
+
+def update_files():
+    app_dir = Path(sys.argv[0]).resolve().parent
+
+    # Manifest von GitHub laden.
+    response = requests.get(MANIFEST_URL, timeout=15)
     response.raise_for_status()
-    neuer_code = response.content
+    manifest = response.json()
 
-    skript_pfad = Path(sys.argv[0]).resolve()
+    prepared_files = []
 
-    # Erst vollständig in eine temporäre Datei schreiben.
-    with tempfile.NamedTemporaryFile(
-        mode="wb", dir=skript_pfad.parent, delete=False
-    ) as datei:
-        datei.write(neuer_code)
-        temp_pfad = Path(datei.name)
+    try:
+        # Alle Dateien herunterladen und zunächst temporär speichern.
+        for relative_name, url in manifest["files"].items():
+            relative_path = Path(relative_name)
 
-    # Danach die bestehende Datei ersetzen.
-    os.replace(temp_pfad, skript_pfad)
+            # Verhindert absolute Pfade und Pfade wie ../../andere_datei.
+            if relative_path.is_absolute() or ".." in relative_path.parts:
+                raise ValueError(f"Ungültiger Dateipfad im Manifest: {relative_name}")
 
-    print("Update installiert. Bitte starte die App erneut.")
-    # Automatischer Neustart ist hier absichtlich ausgelassen:
-    # Der App-Code könnte nach update_check() sonst weiterlaufen,
-    # während os.execv() den laufenden Prozess ersetzt.
+            target_path = (app_dir / relative_path).resolve()
+
+            # Das Ziel muss im Programmordner bleiben.
+            if not target_path.is_relative_to(app_dir):
+                raise ValueError(f"Ungültiger Dateipfad im Manifest: {relative_name}")
+
+            download = requests.get(url, timeout=30)
+            download.raise_for_status()
+
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=target_path.parent,
+                delete=False,
+            ) as temp_file:
+                temp_file.write(download.content)
+                temp_path = Path(temp_file.name)
+
+            prepared_files.append((temp_path, target_path, relative_name))
+
+        # Erst nachdem alle Downloads geklappt haben, Dateien ersetzen.
+        # version.txt kommt zuletzt, damit die angezeigte Version zum Stand passt.
+        prepared_files.sort(
+            key=lambda item: item[2] == "version.txt"
+        )
+
+        for temp_path, target_path, _ in prepared_files:
+            os.replace(temp_path, target_path)
+
+        print("Update installiert. Bitte starte das Programm erneut.")
+
+    finally:
+        # Temporäre Dateien entfernen, falls beim Update etwas fehlschlägt.
+        for temp_path, _, _ in prepared_files:
+            temp_path.unlink(missing_ok=True)
 
 
 def update_check():
-    print(f"Aktuelle Version: {AKTUELLE_VERSION}")
-    print("Prüfe auf Updates...")
+    app_dir = Path(sys.argv[0]).resolve().parent
+    local_version_path = app_dir / "version.txt"
 
     try:
+        current_version_text = local_version_path.read_text(
+            encoding="utf-8"
+        ).strip()
+
         response = requests.get(VERSION_URL, timeout=10)
         response.raise_for_status()
-        neueste_version = Version(response.text.strip())
+        latest_version_text = response.text.strip()
 
-        if neueste_version > Version(AKTUELLE_VERSION):
-            print(f"Update verfügbar: Version {neueste_version}")
-            jetzt_updaten()
+        current_version = Version(current_version_text)
+        latest_version = Version(latest_version_text)
+
+        print(f"Aktuelle Version: {current_version}")
+        print("Prüfe auf Updates...")
+
+        if latest_version > current_version:
+            print(f"Update verfügbar: Version {latest_version}")
+            update_files()
         else:
             print("Deine Software ist auf dem neuesten Stand.")
 
-    except (requests.RequestException, InvalidVersion) as e:
-        print(f"Update-Prüfung fehlgeschlagen: {e}")
+    except (requests.RequestException, InvalidVersion, ValueError, KeyError) as error:
+        print(f"Update-Prüfung fehlgeschlagen: {error}")
