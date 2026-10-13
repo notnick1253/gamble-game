@@ -97,3 +97,6 @@ def update_check():
 
     except (requests.RequestException, InvalidVersion, ValueError, KeyError) as error:
         print(f"Update-Prüfung fehlgeschlagen: {error}")
+
+if __name__ == "__main__":
+    update_check()
