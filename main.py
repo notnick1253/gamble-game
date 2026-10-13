@@ -6,14 +6,14 @@ update_check()
 
 pygame.init()
 
-coins = int(open("coins.txt").readline())
+coins = int(open("asssets/coins.txt").readline())
 
 def coins_on_file(anzahl):
     try:
-        with open("coins.txt", "x", encoding="utf-8") as datei:
+        with open("asssets/coins.txt", "x", encoding="utf-8") as datei:
             datei.write(str(coins))
     except FileExistsError:
-        with open("coins.txt", "w", encoding="utf-8") as datei:
+        with open("asssets/coins.txt", "w", encoding="utf-8") as datei:
             datei.write(str(coins))
 
 window_x = 600
