@@ -9,7 +9,7 @@ from packaging.version import InvalidVersion, Version
 
 
 REPO_URL = "https://raw.githubusercontent.com/notnick1253/gamble-game/main"
-VERSION_URL = f"{REPO_URL}/asssets/version.txt"
+VERSION_URL = f"{REPO_URL}/version.txt"
 MANIFEST_URL = f"{REPO_URL}/manifest.json"
 
 
