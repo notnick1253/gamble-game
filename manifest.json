@@ -1,0 +1,7 @@
+{
+  "files": {
+    "main.py": "https://raw.githubusercontent.com/notnick1253/gamble-game/main/main.py",
+    "update.py": "https://raw.githubusercontent.com/notnick1253/gamble-game/main/update.py",
+    "version.txt": "https://raw.githubusercontent.com/notnick1253/gamble-game/main/version.txt"
+  }
+}
