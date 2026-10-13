@@ -6,7 +6,15 @@ update_check()
 
 pygame.init()
 
-coins = 10
+coins = int(open("coins.txt").readline())
+
+def coins_on_file(anzahl):
+    try:
+        with open("coins.txt", "x", encoding="utf-8") as datei:
+            datei.write(str(coins))
+    except FileExistsError:
+        with open("coins.txt", "w", encoding="utf-8") as datei:
+            datei.write(str(coins))
 
 window_x = 600
 window_y = 400
@@ -429,6 +437,8 @@ def switch():
 running = True
 
 while running:
+    
+    coins_on_file(str(coins))
 
     dt = clock.tick(60) / 1000
 
