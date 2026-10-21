@@ -1,12 +1,50 @@
 import random
 import pygame
+import json
+import requests
+import base64
+from urllib.parse import quote
 from update import update_check
 
 update_check()
 
 pygame.init()
 
+token = "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"
+
+
+window_x_sign = 400
+window_y_sign = 300
+
+username_input = "username"
+password_input = "password"
+
+visibility = False
+typing_password = False
+typing_user = False
+acc_not_found = False
+default_password = True
+default_user = True
+error = False
+
+
+username_box_rect = pygame.rect.Rect(window_x_sign/2-100,window_y_sign/2, 200, 35)
+password_box_rect = pygame.rect.Rect(window_x_sign/2-100,window_y_sign/2+40, 200, 35)
+
+screen_sign = pygame.display.set_mode((window_x_sign, window_y_sign))
+clock = pygame.time.Clock()
+pygame.display.set_caption("Sign In")
+
+title = pygame.font.Font(None, 50)
+inputt = pygame.font.Font(None, 30)
+error_font = pygame.font.Font(None, 20)
+
+error_message_surface = error_font.render(
+    "password or username is wrong. Please try again", True, (255, 0, 0)
+)
+
 coins = int(open("asssets/coins.txt").readline())
+
 
 def coins_on_file(anzahl):
     try:
@@ -40,6 +78,7 @@ knob_y = lever_top
 
 dragging = False
 returning = False
+authorized = False
 
 knob = pygame.Rect(0, 0, 20, 20)
 
@@ -53,6 +92,64 @@ slot_size = 3
 current_numbers = [7, 7, 7, 7, 7]
 
 switch_button = pygame.Rect(window_x/2-25, 10, 50, 20)
+
+def password_visibility(password, visibility):
+    global eye_rect
+    eye_rect = pygame.Rect(
+        window_x_sign / 2 + 73,
+        window_y_sign / 2 + 48,
+        24,
+        20
+    )    
+    pygame.draw.ellipse(screen_sign, (255,255,255), (window_x_sign/2+75, window_y_sign/2+51.25, 20, 12.5))
+    pygame.draw.circle(screen_sign, (0,0,0), (window_x_sign/2+85, window_y_sign/2+57.5), 6)
+    
+    if not visibility and not default_password:
+        pygame.draw.line(screen_sign, (255,255,255), (window_x_sign/2+75,window_y_sign/2+51.25), (window_x_sign/2+95, window_y_sign/2+63.75), 2)
+        password = "*" * len(password)      
+    elif not visibility:
+        pygame.draw.line(screen_sign, (255,255,255), (window_x_sign/2+75,window_y_sign/2+51.25), (window_x_sign/2+95, window_y_sign/2+63.75), 2)
+    return password
+
+
+def check_accounts(user, password):
+    global error
+
+    owner = "notnick1253"
+    repo = "acc_server"
+    branch = "main"
+
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/accounts"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    response = requests.get(
+        f"{url}/{user}.json",
+        headers=headers,
+        params={"ref": branch},
+        timeout=15,
+    )
+    if response.status_code == 404:
+        error = True
+        return
+
+    response.raise_for_status()
+
+    data = response.json()
+    file_bytes = base64.b64decode(data["content"])
+    account = json.loads(file_bytes.decode("utf-8"))    
+
+    if response.status_code == 200:
+        if error:
+            error = not error
+        
+        if password == account["user"]["password"]:
+            return True
+        else:
+            error = not error
 
 
 def handle(slots):
@@ -434,9 +531,103 @@ def switch():
         )
     
 
-running = True
+while not authorized:
+            if not username_input and not typing_user:
+                default_user = True
+                username_input = "username"
+            if not password_input and not typing_password:
+                default_password = True
+                password_input = "password"
+                
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if eye_rect.collidepoint(event.pos):
+                        visibility = not visibility
+                    elif password_box_rect.collidepoint(event.pos):
+                        if default_password:
+                            password_input = ""
+                            default_password = False
+                        typing_user = False
+                        typing_password = True
+    
+                    elif username_box_rect.collidepoint(event.pos):
+                        if default_user:
+                            username_input = ""
+                            default_user = False
+                        typing_password = False
+                        typing_user = True
+    
+                    else:
+                        typing_password = False
+                        typing_user = False
+                        
+                if event.type == pygame.KEYDOWN and typing_user:
+                    if default_user:
+                        username_input = ""
+                        default_user = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        username_input = username_input[:-1]
+                    elif event.key == pygame.K_RETURN:
+                        typing_password = not typing_password
+                        typing_user = not typing_user
+                    else:
+                        username_input += event.unicode
+                                
+                if event.type == pygame.KEYDOWN and typing_password:
+                    if default_password:
+                        password_input = ""
+                        default_password = False
+                    if event.key == pygame.K_BACKSPACE:
+                        password_input = password_input[:-1]
+                    elif event.key == pygame.K_RETURN:
+                        if password_input and username_input and not default_password and not default_user:
+                            if check_accounts(username_input, password_input):
+                                authorized = True
+                            else:
+                                authorized = False
+                    else:
+                        password_input += event.unicode
+    
+            screen_sign.fill("black")    
+            title_suface = title.render(
+                "Sign In", True, (255, 255, 255)
+            )
+            username_inpt_surface = inputt.render(
+                    username_input, True, (255,255,255)
+                )
+            password_inpt_surface = inputt.render(
+                    password_visibility(password_input, visibility), True, (255,255,255)
+                )
+                
+            title_widht = title_suface.get_rect(center=(window_x_sign // 2, window_y_sign // 2-50))
+            
+            pygame.draw.rect(screen_sign,
+                (255, 255, 255),
+                username_box_rect,
+                1
+            )
+            
+            pygame.draw.rect(screen_sign,
+                (255, 255, 255),
+                password_box_rect,
+                1
+            )
+                
+            screen_sign.blit(title_suface, title_widht)
+            screen_sign.blit(username_inpt_surface, (username_box_rect[0]+5,username_box_rect[1]+6))
+            screen_sign.blit(password_inpt_surface, (password_box_rect[0]+5,password_box_rect[1]+6))
+            if error:
+                error_widht = error_message_surface.get_width()
+                screen_sign.blit(error_message_surface, (window_x/2-error_widht/2,window_y/2-20))
+                    
+            pygame.display.flip()
+    
+            clock.tick(60)  # limits FPS to 60
 
-while running:
+while authorized:
     
     coins_on_file(str(coins))
 
