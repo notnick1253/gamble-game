@@ -10,7 +10,6 @@ update_check()
 
 pygame.init()
 
-token = "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"
 
 
 window_x_sign = 400
