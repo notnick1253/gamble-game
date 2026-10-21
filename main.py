@@ -11,8 +11,6 @@ token = "github_pat_11BVLT6IY0yAzM7nChhAL1_pPtrWEWldYTzMV4UctIRkPFrQsyFu42FPxgSJ
 
 pygame.init()
 
-coins = int(open("asssets/coins.txt").readline())
-
 def coins_on_file(anzahl):
     print(anzahl)
 
