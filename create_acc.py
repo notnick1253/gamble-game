@@ -2,6 +2,7 @@ import base64
 import json
 import requests
 
+token = "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"
 
 headers = {
             "Authorization": f"Bearer {token}",
