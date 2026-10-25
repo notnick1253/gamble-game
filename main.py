@@ -5,19 +5,66 @@ import requests
 import base64
 from update import update_check
 
+class saving:
+    def __init__(self, saved, notsaved):
+        self.saved = saved
+        self.notsaved = notsaved
+    def save(self):
+        self.saved = True
+        self.notsaved = False
+    def notsaving(self):
+        self.notsaved = True
+        self.saved = False
+    def status(self):
+        if self.saved:
+            return "saved"
+        elif self.notsaved:
+            return "not saved!!!"
+    def force_save(self):
+        coins_on_file(coins)
+        
+class crates:
+    def __init__(self, price, gewinne):
+        self.price = price
+        self.gewinne = gewinne
+        
+        
 update_check()
 
-token = "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"
+indicator = saving(True, False)
 
+# ------------------ GitHub ------------------
+token = "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"
+owner = "notnick1253"
+repo = "acc_server"
+branch = "main"
+
+url = f"https://api.github.com/repos/{owner}/{repo}/contents/accounts"
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+}
+
+
+# ------------------ Fenster und Pygame ------------------
 pygame.init()
 
-def coins_on_file(anzahl):
-    print(anzahl)
+window_x = 600
+window_y = 400
+
+screen = pygame.display.set_mode((window_x, window_y))
+clock = pygame.time.Clock()
+pygame.display.set_caption("Sign In")
+
+screen = pygame.display.set_mode((window_x, window_y))
+pygame.display.set_caption("Gamba Gamba V.2")
+
+clock = pygame.time.Clock()
 
 
-window_xx = 400
-window_yy = 300
-
+# ------------------ Eingaben und Status ------------------
 username_input = "username"
 password_input = "password"
 
@@ -29,50 +76,47 @@ default_password = True
 default_user = True
 error = False
 
+menu_state = "sign in"
 
-username_box_rect = pygame.rect.Rect(window_xx/2-100,window_yy/2, 200, 35)
-password_box_rect = pygame.rect.Rect(window_xx/2-100,window_yy/2+40, 200, 35)
 
-screen = pygame.display.set_mode((window_xx, window_yy))
-clock = pygame.time.Clock()
-pygame.display.set_caption("Sign In")
+# ------------------ Rechtecke und Positionen ------------------
+username_box_rect = pygame.rect.Rect(window_x / 2 - 100, window_y / 2, 200, 35)
+password_box_rect = pygame.rect.Rect(window_x / 2 - 100, window_y / 2 + 40, 200, 35)
+save_font_rect = pygame.rect.Rect(window_x - 80, window_y - 20, 80, 20)
 
+lever_x = window_x / 2 + 170
+lever_top = window_y / 2 - 70
+lever_bottom = window_y / 2 + 100
+knob_y = lever_top
+
+knob = pygame.Rect(0, 0, 20, 20)
+switch_button = pygame.Rect(window_x / 2 - 25, 10, 50, 20)
+
+
+# ------------------ Schriftarten und Fehlermeldung ------------------
 title = pygame.font.Font(None, 50)
 inputt = pygame.font.Font(None, 30)
 error_font = pygame.font.Font(None, 20)
 
 error_message_surface = error_font.render(
-    "password or username is wrong. Please try again", True, (255, 0, 0)
+    "password or username is wrong. Please try again",
+    True,
+    (255, 0, 0)
 )
-
-window_x = 600
-window_y = 400
-
-zahlen = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-screen = pygame.display.set_mode((window_x, window_y))
-pygame.display.set_caption("Gamba Gamba V.2")
-
-clock = pygame.time.Clock()
 
 schrift = pygame.font.Font(None, 100)
 hdhjs = pygame.font.Font(None, 35)
 creator = pygame.font.Font(None, 20)
 switch_font = pygame.font.Font(None, 43)
 
-lever_x = window_x / 2 + 170
 
-lever_top = window_y / 2 - 70
-lever_bottom = window_y / 2 + 100
+# Zeitsteuerung
+INTERVALL = 60_000  # Millisekunden
+naechste_ausfuehrung = pygame.time.get_ticks() + INTERVALL
 
-knob_y = lever_top
 
-dragging = False
-returning = False
-
-authentiziert = False
-
-knob = pygame.Rect(0, 0, 20, 20)
+# ------------------ Slot-Spiel ------------------
+zahlen = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 slot_running = False
 slot_timer = 0
@@ -80,45 +124,65 @@ slot_duration = 1.5
 
 # 3 oder 5 Slots
 slot_size = 3
-
 current_numbers = [7, 7, 7, 7, 7]
 
-switch_button = pygame.Rect(window_x/2-25, 10, 50, 20)
+dragging = False
+returning = False
 
+def coins_on_file(anzahl):
+    indicator.notsaving()
+    get_response = requests.get(
+        f"{url}/{username_input}.json",
+        headers=headers,
+        params={"ref": branch},
+        timeout=15,
+    )
+    get_response.raise_for_status()
+    data = get_response.json()
+
+    account["user"]["assets"]["coins"] = anzahl
+
+    content = base64.b64encode(
+        json.dumps(account, ensure_ascii=False, indent=2).encode("utf-8")
+    ).decode("utf-8")
+
+    put_response = requests.put(
+        f"{url}/{username_input}.json",
+        headers=headers,
+        json={
+            "message": f"Coins für {username_input} aktualisieren",
+            "content": content,
+            "sha": data["sha"],
+            "branch": branch,
+        },
+        timeout=15,
+    )
+    put_response.raise_for_status()
+    
+    if put_response.status_code == 200:
+        indicator.save()
 
 def password_visibility(password, visibility):
     global eye_rect
     eye_rect = pygame.Rect(
-        window_xx / 2 + 73,
-        window_yy / 2 + 48,
+        window_x / 2 + 73,
+        window_y / 2 + 48,
         24,
         20
     )    
-    pygame.draw.ellipse(screen, (255,255,255), (window_xx/2+75, window_yy/2+51.25, 20, 12.5))
-    pygame.draw.circle(screen, (0,0,0), (window_xx/2+85, window_yy/2+57.5), 6)
+    pygame.draw.ellipse(screen, (255,255,255), (window_x/2+75, window_y/2+51.25, 20, 12.5))
+    pygame.draw.circle(screen, (0,0,0), (window_x/2+85, window_y/2+57.5), 6)
     
     if not visibility and not default_password:
-        pygame.draw.line(screen, (255,255,255), (window_xx/2+75,window_yy/2+51.25), (window_xx/2+95, window_yy/2+63.75), 2)
+        pygame.draw.line(screen, (255,255,255), (window_x/2+75,window_y/2+51.25), (window_x/2+95, window_y/2+63.75), 2)
         password = "*" * len(password)      
     elif not visibility:
-        pygame.draw.line(screen, (255,255,255), (window_xx/2+75,window_yy/2+51.25), (window_xx/2+95, window_yy/2+63.75), 2)
+        pygame.draw.line(screen, (255,255,255), (window_x/2+75,window_y/2+51.25), (window_x/2+95, window_y/2+63.75), 2)
     return password
     
     
 def check_accounts(user, password):
-    global error, coins
-    
-
-    owner = "notnick1253"
-    repo = "acc_server"
-    branch = "main"
-
-    url = f"https://api.github.com/repos/{owner}/{repo}/contents/accounts"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
+    global error, coins, account, account_sha
 
     response = requests.get(
         f"{url}/{user}.json",
@@ -133,6 +197,7 @@ def check_accounts(user, password):
     response.raise_for_status()
 
     data = response.json()
+    account_sha = data["sha"]
     file_bytes = base64.b64decode(data["content"])
     account = json.loads(file_bytes.decode("utf-8"))    
 
@@ -156,9 +221,9 @@ def handle(slots):
         (0, 0, 0),
         (
             window_x / 2 + 160 + slots,
-            0,
+            40,
             window_x - (window_x / 2 + 145) + slots,
-            window_y
+            window_y-80
         )
     )
 
@@ -282,6 +347,8 @@ def start_slot():
 
     coins -= 2
 
+    indicator.notsaving()
+
     wahrscheinlichkeiten()
 
     zahlen_bestimmen()
@@ -328,7 +395,7 @@ def build_slot(size):
 
         slots = 0
 
-        pygame.draw.rect(
+        _slot_links_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -340,7 +407,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _slot_mitte_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -352,7 +419,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _slot_rechts_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -364,7 +431,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _inner_box_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -376,7 +443,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _outer_box_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -392,7 +459,7 @@ def build_slot(size):
 
         slots = 80
 
-        pygame.draw.rect(
+        _slot_links2_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -404,7 +471,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _slot_links_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -416,7 +483,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _slot_mitte_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -428,7 +495,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _slot_rechts_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -440,7 +507,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _slot_rechts2_ = pygame.draw.rect(
             screen,
             (255, 255, 255, 255),
             (
@@ -452,7 +519,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _inner_box_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -464,7 +531,7 @@ def build_slot(size):
             1
         )
 
-        pygame.draw.rect(
+        _outer_box_ = pygame.draw.rect(
             screen,
             (255, 255, 255),
             (
@@ -526,20 +593,38 @@ def switch():
         )
     
 
+def alle_60_sekunden():
+    jetzt = pygame.time.get_ticks()
+
+    if jetzt - alle_60_sekunden.letzte_ausfuehrung >= 60_000:
+        # Hier deine Aktion einfügen
+        coins_on_file(coins)
+        alle_60_sekunden.letzte_ausfuehrung = jetzt
+
+
+def save_indicator(status):
+    global save_font, save_font_widht
+    
+    save_font = creator.render(
+        indicator.status(), True, (255,255,255)
+    )
+    save_font_widht = save_font.get_width()
+
+alle_60_sekunden.letzte_ausfuehrung = pygame.time.get_ticks()
+
+
 running = True
 
 while running:
-    if authentiziert:        
-        coins_on_file(str(coins))
-    elif not authentiziert:
+    alle_60_sekunden()
+    
+    if menu_state == "sign in":
         if not username_input and not typing_user:
             default_user = True
             username_input = "username"
         if not password_input and not typing_password:
             default_password = True
             password_input = "password"
-
-    dt = clock.tick(60) / 1000
 
     for event in pygame.event.get():
 
@@ -550,7 +635,7 @@ while running:
 
             if event.button == 1:
 
-                if authentiziert:
+                if menu_state == "slot machine":
                     if knob.collidepoint(event.pos):
 
                         if not slot_running:
@@ -563,8 +648,10 @@ while running:
                             slot_size = 5
                         elif slot_size == 5:
                             slot_size = 3
+                    if save_font_rect.collidepoint(event.pos):
+                        indicator.force_save()
                             
-                elif not authentiziert:
+                elif menu_state == "sign in":
                     if eye_rect.collidepoint(event.pos):
                         visibility = not visibility
                     elif password_box_rect.collidepoint(event.pos):
@@ -587,7 +674,7 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONUP:
 
-            if authentiziert:    
+            if menu_state == "slot machine":    
                 if event.button == 1:
 
                     if dragging:
@@ -598,7 +685,7 @@ while running:
                         start_slot()
                         
         if event.type == pygame.KEYDOWN and typing_user:
-            if not authentiziert:
+            if menu_state == "sign in":
                 if default_user:
                     username_input = ""
                     default_user = False
@@ -611,7 +698,7 @@ while running:
                     username_input += event.unicode
                         
         if event.type == pygame.KEYDOWN and typing_password:
-            if not authentiziert:
+            if menu_state == "sign in":
                 if default_password:
                     password_input = ""
                     default_password = False
@@ -620,13 +707,13 @@ while running:
                 elif event.key == pygame.K_RETURN:
                     if password_input and username_input and not default_password and not default_user:
                         if check_accounts(username_input, password_input):
-                            authentiziert = True
+                            menu_state = "slot machine"
                         else:
-                            authentiziert = False
+                            menu_state = "sign in"                
                 else:
                     password_input += event.unicode
 
-    if authentiziert:
+    if menu_state == "slot machine":
         if dragging:
 
             mouse_y = pygame.mouse.get_pos()[1]
@@ -650,7 +737,7 @@ while running:
                 knob_y = lever_top
                 returning = False
 
-    if authentiziert:
+    if menu_state == "slot machine":
         update_slot(dt)
 
         screen.fill((0, 0, 0))
@@ -660,6 +747,8 @@ while running:
         
         
         switch()
+        
+        save_indicator(None)
 
         creator_schrift = creator.render(
             "- created by not.nick -",
@@ -742,6 +831,8 @@ while running:
             )
 
         creator_x = creator_schrift.get_width()
+                
+        screen.blit(save_font, (window_x-save_font_widht-10, window_y-20))
 
         screen.blit(
             creator_schrift,
@@ -760,7 +851,7 @@ while running:
         )
 
         handle(slots)
-    elif not authentiziert:
+    elif menu_state == "sign in":
         screen.fill("black")    
         title_suface = title.render(
             "Sign In", True, (255, 255, 255)
@@ -772,7 +863,7 @@ while running:
                 password_visibility(password_input, visibility), True, (255,255,255)
             )
             
-        title_widht = title_suface.get_rect(center=(window_xx // 2, window_yy // 2-50))
+        title_widht = title_suface.get_rect(center=(window_x // 2, window_y // 2-50))
         
         pygame.draw.rect(screen,
             (255, 255, 255),
@@ -791,9 +882,10 @@ while running:
         screen.blit(password_inpt_surface, (password_box_rect[0]+5,password_box_rect[1]+6))
         if error:
             error_widht = error_message_surface.get_width()
-            screen.blit(error_message_surface, (window_xx/2-error_widht/2,window_yy/2-20))
+            screen.blit(error_message_surface, (window_x/2-error_widht/2,window_y/2-20))
 
     pygame.display.update()
+    dt = clock.tick(60) / 1000
 
 
 pygame.quit()
