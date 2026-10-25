@@ -34,7 +34,7 @@ update_check()
 indicator = saving(True, False)
 
 # ------------------ GitHub ------------------
-token = "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"
+token = ""
 owner = "notnick1253"
 repo = "acc_server"
 branch = "main"
