@@ -33,12 +33,12 @@ def create_acc(name, password):
     
         data = {
             "user": {
-                "playing": False,
+                "current_skin": "default",
                 "username": name,
                 "password": password,
                 "assets": {
                     "coins": 10,
-                    "skins": [],
+                    "skins": ["default"],
                     "playtime/h": 0
                 }
             }
