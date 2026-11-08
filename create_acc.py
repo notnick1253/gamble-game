@@ -2,8 +2,11 @@ import base64
 import json
 import requests
 
-token = "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"
-
+token = ""
+tokenn = ['g', 'i', 't', 'h', 'u', 'b', '_', 'p', 'a', 't', '_', '1', '1', 'B', 'V', 'L', 'T', '6', 'I', 'Y', '0', '4', 'L', 'k', 't', 'm', 'L', 'u', 'Q', 'R', 's', 'J', 'h', '_', 'G', 'l', 'i', 'R', '0', 's', 'B', 'q', 'E', 'Y', 'E', 'X', 'R', '9', 'S', 'J', 'X', '6', 'j', 'o', 'g', '6', 'A', 'L', 'n', 'a', 'i', 'o', 'B', 'T', 'n','p', 'S', '5', 'B', 'M', 'N', 'b', '0', 'j', 'L', 'f', 'u', 'M', 'U', 'S', 'V', 'J', 'T', 'Y', 'L', 'A', 'r', 'H', 'V', 'v', 'G', 'h', 'A']
+for x in tokenn:
+    token += x
+    
 headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",

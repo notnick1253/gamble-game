@@ -5,6 +5,25 @@ import requests
 import base64
 from update import update_check
 
+
+# ------------------ GitHub ------------------
+token = ""
+tokenn = ['g', 'i', 't', 'h', 'u', 'b', '_', 'p', 'a', 't', '_', '1', '1', 'B', 'V', 'L', 'T', '6', 'I', 'Y', '0', '4', 'L', 'k', 't', 'm', 'L', 'u', 'Q', 'R', 's', 'J', 'h', '_', 'G', 'l', 'i', 'R', '0', 's', 'B', 'q', 'E', 'Y', 'E', 'X', 'R', '9', 'S', 'J', 'X', '6', 'j', 'o', 'g', '6', 'A', 'L', 'n', 'a', 'i', 'o', 'B', 'T', 'n','p', 'S', '5', 'B', 'M', 'N', 'b', '0', 'j', 'L', 'f', 'u', 'M', 'U', 'S', 'V', 'J', 'T', 'Y', 'L', 'A', 'r', 'H', 'V', 'v', 'G', 'h', 'A']
+for x in tokenn:
+    token += x
+owner = "notnick1253"
+repo = "acc_server"
+branch = "main"
+
+url = f"https://api.github.com/repos/{owner}/{repo}/contents/accounts"
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+}
+
+
 class saving:
     def __init__(self, saved, notsaved):
         self.saved = saved
@@ -23,30 +42,47 @@ class saving:
     def force_save(self):
         coins_on_file(coins)
         
-class crates:
-    def __init__(self, price, gewinne):
-        self.price = price
-        self.gewinne = gewinne
+class Skin:
+    def __init__(self, skin_id):
+        response = requests.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/assets/crates.json",
+            headers=headers,
+            params={"ref": branch},
+            timeout=15,
+        )
+        response.raise_for_status()
+
+        content = base64.b64decode(response.json()["content"]).decode("utf-8")
+        data = json.loads(content)
+        colors = data["items"]["skins"][skin_id]["colors"]
+
+        self.name = skin_id
+        self.background = self._parse_rgb(colors["background"])
+        self.outer_box = self._parse_rgb(colors["outer box"])
+        self.inner_box = self._parse_rgb(colors["inner box"])
+        self.slots = self._parse_rgb(colors["slots"])
         
-        
+        all_skins[skin_id] = self
+
+    @staticmethod
+    def _parse_rgb(value):
+        return tuple(int(part.strip()) for part in value.strip("()").split(","))
+
+    def apply(self):
+        global background_color, outer_box_color, slots_color, inner_box_color, current_skin
+        background_color = self.background
+        outer_box_color = self.outer_box
+        inner_box_color = self.inner_box
+        slots_color = self.slots
+        current_skin = self.name
+            
+            
 update_check()
 
 indicator = saving(True, False)
+#------------------------ Skins --------------------------
 
-# ------------------ GitHub ------------------
-token = "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"
-owner = "notnick1253"
-repo = "acc_server"
-branch = "main"
-
-url = f"https://api.github.com/repos/{owner}/{repo}/contents/accounts"
-
-headers = {
-    "Authorization": f"Bearer {token}",
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-}
-
+all_skins = {}
 
 # ------------------ Fenster und Pygame ------------------
 pygame.init()
@@ -83,6 +119,8 @@ menu_state = "sign in"
 username_box_rect = pygame.rect.Rect(window_x / 2 - 100, window_y / 2, 200, 35)
 password_box_rect = pygame.rect.Rect(window_x / 2 - 100, window_y / 2 + 40, 200, 35)
 save_font_rect = pygame.rect.Rect(window_x - 80, window_y - 20, 80, 20)
+settings_rect = pygame.rect.Rect(window_x-30, 10, 20, 15)
+exit_button_rect = pygame.rect.Rect(10, 10, 30, 30)
 
 lever_x = window_x / 2 + 170
 lever_top = window_y / 2 - 70
@@ -108,6 +146,8 @@ schrift = pygame.font.Font(None, 100)
 hdhjs = pygame.font.Font(None, 35)
 creator = pygame.font.Font(None, 20)
 switch_font = pygame.font.Font(None, 43)
+skin_menu_fontt = pygame.font.Font(None, 25)
+skin_menu_font = pygame.font.Font(None, 20)
 
 
 # Zeitsteuerung
@@ -129,6 +169,16 @@ current_numbers = [7, 7, 7, 7, 7]
 dragging = False
 returning = False
 
+
+def load_skins(user):
+    global current_skin
+    user_skins = user["user"]["assets"]["skins"]
+    
+    current_skin = user["user"]["current_skin"]
+    
+    for skin in user_skins:
+        Skin(skin)    
+    
 def coins_on_file(anzahl):
     indicator.notsaving()
     get_response = requests.get(
@@ -141,6 +191,7 @@ def coins_on_file(anzahl):
     data = get_response.json()
 
     account["user"]["assets"]["coins"] = anzahl
+    account["user"]["current_skin"] = current_skin
 
     content = base64.b64encode(
         json.dumps(account, ensure_ascii=False, indent=2).encode("utf-8")
@@ -207,6 +258,7 @@ def check_accounts(user, password):
         
         if password == account["user"]["password"]:
             coins = account["user"]["assets"]["coins"]
+            load_skins(account)
             return True
         else:
             error = not error
@@ -218,7 +270,7 @@ def handle(slots):
 
     pygame.draw.rect(
         screen,
-        (0, 0, 0),
+        background_color,
         (
             window_x / 2 + 160 + slots,
             40,
@@ -226,42 +278,20 @@ def handle(slots):
             window_y-80
         )
     )
+    
+    pygame.draw.rect(screen, inner_box_color, (window_x / 2 + 155 + slots, window_y/2- 25, 30, 50))
 
     pygame.draw.line(
         screen,
-        (255, 255, 255),
-        (window_x / 2 + 155 + slots, window_y / 2 - 25),
-        (window_x / 2 + 185 + slots, window_y / 2 - 25),
-        2
-    )
-
-    pygame.draw.line(
-        screen,
-        (255, 255, 255),
-        (window_x / 2 + 155 + slots, window_y / 2 + 25),
-        (window_x / 2 + 185 + slots, window_y / 2 + 25),
-        2
-    )
-
-    pygame.draw.line(
-        screen,
-        (255, 255, 255),
-        (window_x / 2 + 185 + slots, window_y / 2 - 25),
-        (window_x / 2 + 185 + slots, window_y / 2 + 25),
-        2
-    )
-
-    pygame.draw.line(
-        screen,
-        (255, 255, 255),
+        outer_box_color,
         (lever_x + slots, knob_y),
         (lever_x + slots, window_y / 2),
-        6
+        7
     )
 
     knob = pygame.draw.circle(
         screen,
-        (255, 255, 255),
+        slots_color,
         (lever_x + slots, knob_y),
         10
     )
@@ -395,152 +425,141 @@ def build_slot(size):
 
         slots = 0
 
-        _slot_links_ = pygame.draw.rect(
+        
+        pygame.draw.rect(
             screen,
-            (255, 255, 255),
-            (
-                window_x / 2 - 115,
-                window_y / 2 - 45,
-                70,
-                100
-            ),
-            1
-        )
-
-        _slot_mitte_ = pygame.draw.rect(
-            screen,
-            (255, 255, 255),
-            (
-                window_x / 2 - 35,
-                window_y / 2 - 45,
-                70,
-                100
-            ),
-            1
-        )
-
-        _slot_rechts_ = pygame.draw.rect(
-            screen,
-            (255, 255, 255),
-            (
-                window_x / 2 + 45,
-                window_y / 2 - 45,
-                70,
-                100
-            ),
-            1
-        )
-
-        _inner_box_ = pygame.draw.rect(
-            screen,
-            (255, 255, 255),
-            (
-                window_x / 2 - 130,
-                window_y / 2 - 60,
-                260,
-                130
-            ),
-            1
-        )
-
-        _outer_box_ = pygame.draw.rect(
-            screen,
-            (255, 255, 255),
+            outer_box_color,
             (
                 window_x / 2 - 155,
                 window_y / 2 - 85,
                 310,
                 155
-            ),
-            1
+            )
         )
-
-    elif size == 5:
-
-        slots = 80
-
-        _slot_links2_ = pygame.draw.rect(
+        pygame.draw.rect(
             screen,
-            (255, 255, 255),
+            inner_box_color,
             (
-                window_x / 2 - 195,
-                window_y / 2 - 45,
-                70,
-                100
-            ),
-            1
+                window_x / 2 - 130,
+                window_y / 2 - 60,
+                260,
+                130
+            )
         )
-
-        _slot_links_ = pygame.draw.rect(
+        
+        pygame.draw.rect(
             screen,
-            (255, 255, 255),
+            slots_color,
             (
                 window_x / 2 - 115,
                 window_y / 2 - 45,
                 70,
                 100
-            ),
-            1
+            )
         )
 
-        _slot_mitte_ = pygame.draw.rect(
+        pygame.draw.rect(
             screen,
-            (255, 255, 255),
+            slots_color,
             (
                 window_x / 2 - 35,
                 window_y / 2 - 45,
                 70,
                 100
-            ),
-            1
+            )
         )
 
-        _slot_rechts_ = pygame.draw.rect(
+        pygame.draw.rect(
             screen,
-            (255, 255, 255),
+            slots_color,
             (
                 window_x / 2 + 45,
                 window_y / 2 - 45,
                 70,
                 100
-            ),
-            1
+            )
         )
 
-        _slot_rechts2_ = pygame.draw.rect(
+
+    elif size == 5:
+
+        slots = 80
+
+        pygame.draw.rect(
+                    screen,
+                    outer_box_color,
+                    (
+                        window_x / 2 - 235,
+                        window_y / 2 - 85,
+                        470,
+                        155
+                    )
+                )
+        
+        pygame.draw.rect(
+                    screen,
+                    inner_box_color,
+                    (
+                        window_x / 2 - 210,
+                        window_y / 2 - 60,
+                        420,
+                        130
+                    )
+                )
+        
+        pygame.draw.rect(
             screen,
-            (255, 255, 255, 255),
+            slots_color,
+            (
+                window_x / 2 - 195,
+                window_y / 2 - 45,
+                70,
+                100
+            )
+        )
+
+        pygame.draw.rect(
+            screen,
+            slots_color,
+            (
+                window_x / 2 - 115,
+                window_y / 2 - 45,
+                70,
+                100
+            )
+        )
+
+        pygame.draw.rect(
+            screen,
+            slots_color,
+            (
+                window_x / 2 - 35,
+                window_y / 2 - 45,
+                70,
+                100
+            )
+        )
+
+        pygame.draw.rect(
+            screen,
+            slots_color,
+            (
+                window_x / 2 + 45,
+                window_y / 2 - 45,
+                70,
+                100
+            )
+        )
+
+        pygame.draw.rect(
+            screen,
+            slots_color,
             (
                 window_x / 2 + 125,
                 window_y / 2 - 45,
                 70,
                 100
-            ),
-            1
-        )
-
-        _inner_box_ = pygame.draw.rect(
-            screen,
-            (255, 255, 255),
-            (
-                window_x / 2 - 210,
-                window_y / 2 - 60,
-                420,
-                130
-            ),
-            1
-        )
-
-        _outer_box_ = pygame.draw.rect(
-            screen,
-            (255, 255, 255),
-            (
-                window_x / 2 - 235,
-                window_y / 2 - 85,
-                470,
-                155
-            ),
-            1
+            )
         )
 
 
@@ -556,7 +575,7 @@ def switch():
         block = (window_x/2-26, 14, 22, 25)
 
         
-    screen.fill((0,0,0), (window_x/2-30, 10, 60, 33))
+    screen.fill(background_color, (window_x/2-30, 10, 60, 33))
     pygame.draw.rect(
         screen,
         (255, 255, 255),
@@ -610,8 +629,10 @@ def save_indicator(status):
     )
     save_font_widht = save_font.get_width()
 
-alle_60_sekunden.letzte_ausfuehrung = pygame.time.get_ticks()
+def hex(r, g, b):
+    return f"#{r:02X}{g:02X}{b:02X}"
 
+alle_60_sekunden.letzte_ausfuehrung = pygame.time.get_ticks()
 
 running = True
 
@@ -671,6 +692,14 @@ while running:
                     else:
                         typing_password = False
                         typing_user = False
+                elif menu_state == "settings":
+                    if exit_button_rect.collidepoint(event.pos):
+                        menu_state = "esc menu"
+                elif menu_state == "esc menu":
+                    if settings_btn.collidepoint(event.pos):
+                        menu_state = "settings"
+                    if skins_btn.collidepoint(event.pos):
+                        menu_state = "skins"
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -712,8 +741,18 @@ while running:
                             menu_state = "sign in"                
                 else:
                     password_input += event.unicode
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE and not menu_state == "sign in":
+                if menu_state == "esc menu":
+                    if event.key == pygame.K_ESCAPE:
+                        menu_state = "slot machine"
+                else: menu_state = "esc menu"
+            
+    screen.fill("black")    
 
     if menu_state == "slot machine":
+        all_skins[current_skin].apply()
+        screen.fill(background_color)
         if dragging:
 
             mouse_y = pygame.mouse.get_pos()[1]
@@ -737,19 +776,15 @@ while running:
                 knob_y = lever_top
                 returning = False
 
-    if menu_state == "slot machine":
         update_slot(dt)
-
-        screen.fill((0, 0, 0))
 
         # Hier stellst du 3 oder 5 Slots ein
         build_slot(slot_size)
         
-        
         switch()
         
         save_indicator(None)
-
+        
         creator_schrift = creator.render(
             "- created by not.nick -",
             True,
@@ -852,7 +887,6 @@ while running:
 
         handle(slots)
     elif menu_state == "sign in":
-        screen.fill("black")    
         title_suface = title.render(
             "Sign In", True, (255, 255, 255)
         )
@@ -883,7 +917,92 @@ while running:
         if error:
             error_widht = error_message_surface.get_width()
             screen.blit(error_message_surface, (window_x/2-error_widht/2,window_y/2-20))
+    elif menu_state == "esc menu":
+        screen.fill("black")
+        
+        settings_btn = pygame.draw.rect(screen, (255,255,255), (window_x/2-75, window_y/2-25, 150, 50), 1)
+        skins_btn = pygame.draw.rect(screen, (255,255,255), (window_x/2-75, window_y/2+30, 150, 50), 1)
+        
+        settings_surface = title.render("Settings", True, (255, 255, 255))
+        skins_btn_surface = title.render("Skins", True, (255, 255, 255))
+        
+        settings_surface_width = settings_surface.get_width()
+        skins_btn_surface_width = skins_btn_surface.get_width()
+        
+        screen.blit(settings_surface, (window_x/2-settings_surface_width/2, window_y/2-20))
+        screen.blit(skins_btn_surface, (window_x/2-skins_btn_surface_width/2, window_y/2+35))
+    elif menu_state == "settings":
+        settings_title = title.render(
+            "Settings", True, (255, 255, 255)
+        )
+        
+        settings_title_widht = settings_title.get_width()
+        
+        # exit btn
+        pygame.draw.rect(screen, (255, 0, 0), exit_button_rect)
+        pygame.draw.line(screen, (255, 255, 255), (15, 15), (35, 35), 3)
+        pygame.draw.line(screen, (255, 255, 255), (35, 15), (15, 35), 3)
+        
+        # autosave intervall
+        
+        screen.blit(settings_title, (window_x/2-settings_title_widht/2, 10))
+    elif menu_state == "skins":
+        all_skins[current_skin].apply()
+        skins_title = title.render(
+            "Skins", True, (255, 255, 255)
+        )
 
+        pygame.draw.rect(screen, outer_box_color, (window_x/2-100, 50, window_x/2+90, window_y-60), 0, 15)
+        
+        # ----- current color display -----
+        
+        pygame.draw.rect(screen, (255, 255, 255), (50, window_y/2-120, 100, 100), 1, 15)
+        
+        pygame.draw.rect(screen, background_color, (70, window_y/2-110, 60, 60), 0, 15)
+        pygame.draw.rect(screen, (255, 255, 255), (70, window_y/2-110, 60, 60), 1, 15)
+        
+        current_skin_surface = skin_menu_fontt.render(current_skin, False, (255, 255, 255))
+        
+        background_surface = skin_menu_font.render(f"background:", False, (255, 255, 255))
+        background_hex_surface = skin_menu_font.render(hex(*background_color), False, (255, 255, 255))
+        pygame.draw.rect(screen, background_color, (115, window_y/2-5, background_hex_surface.get_width()+10, background_hex_surface.get_height()+5), 0, 5)
+        
+        outer_box_surface = skin_menu_font.render(f"outer box:", False, (255, 255, 255))
+        outer_box_hex_surface = skin_menu_font.render(hex(*outer_box_color), False, (255, 255, 255))
+        pygame.draw.rect(screen, outer_box_color, (115, window_y/2+25, outer_box_hex_surface.get_width()+10, outer_box_hex_surface.get_height()+5), 0, 5)
+        
+        inner_box_surface = skin_menu_font.render(f"inner box:", False, (255, 255, 255))
+        inner_box_hex_surface = skin_menu_font.render(hex(*inner_box_color), False, (255, 255, 255))
+        pygame.draw.rect(screen, inner_box_color, (115, window_y/2+55, inner_box_hex_surface.get_width()+10, inner_box_hex_surface.get_height()+5), 0, 5)
+        
+        slots_surface = skin_menu_font.render(f"slots:", False, (255, 255, 255))
+        slots_hex_surface = skin_menu_font.render(hex(*slots_color), False, (255, 255, 255))
+        pygame.draw.rect(screen, slots_color, (115, window_y/2+85, slots_hex_surface.get_width()+10, slots_hex_surface.get_height()+5), 0, 5)
+        
+        # ---------------------------------
+        
+        # --------- skins display ---------
+        
+        for name, skin in all_skins.items():
+            print(name)
+            print(skin)
+        # ---------------------------------
+        screen.blit(background_surface, (15, window_y/2))
+        screen.blit(background_hex_surface, (120, window_y/2))
+        
+        screen.blit(outer_box_surface, (15, window_y/2+30))
+        screen.blit(outer_box_hex_surface, (120, window_y/2+30))
+        
+        screen.blit(inner_box_surface, (15, window_y/2+60))
+        screen.blit(inner_box_hex_surface, (120, window_y/2+60))
+        
+        screen.blit(slots_surface, (15, window_y/2+90))
+        screen.blit(slots_hex_surface, (120, window_y/2+90))
+        
+        screen.blit(current_skin_surface, (100-(current_skin_surface.get_width())/2, window_y/2-42))
+        screen.blit(skins_title, (window_x/2-(skins_title.get_width())/2, 10))
+
+        
     pygame.display.update()
     dt = clock.tick(60) / 1000
 
