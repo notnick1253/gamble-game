@@ -344,12 +344,6 @@ def coin_reback(*werte):
     elif höchstes_ergebnis == 4:
         coins += 25
 
-    elif höchstes_ergebnis == 3:
-        coins += 10
-
-    elif höchstes_ergebnis == 2:
-        coins += 4
-
 
 def zahlen_bestimmen():
 
@@ -701,6 +695,11 @@ while running:
                         menu_state = "settings"
                     if skins_btn.collidepoint(event.pos):
                         menu_state = "skins"
+                elif menu_state == "skins":
+                    for rect, skin in inventory_skin:
+                        if rect.collidepoint(event.pos):
+                            skin.apply()
+                            break
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -983,10 +982,32 @@ while running:
         # ---------------------------------
         
         # --------- skins display ---------
+        skin_num_x = 0
+        skin_num_y = 0
+        
+        inventory_skin = []
         
         for name, skin in all_skins.items():
-            print(name)
-            print(skin)
+            if skin_num_x == 5:
+                skin_num_x = 0
+                skin_num_y += 1
+                
+            rect = pygame.draw.rect(screen, skin.background,(window_x/2+(75*skin_num_x)-90, window_y/2-140+(75*skin_num_y), 70, 70), 0, 15)
+            pygame.draw.rect(screen, (255, 255, 255),(window_x/2+(75*skin_num_x)-90, window_y/2-140+(75*skin_num_y), 70, 70), 1, 15)
+            
+            pygame.draw.rect(screen, skin.background,(window_x/2+(75*skin_num_x)-76, window_y/2-135+(75*skin_num_y), 42, 10.5),0,-1, 10, 10)
+            pygame.draw.rect(screen, skin.outer_box,(window_x/2+(75*skin_num_x)-76, window_y/2-124.5+(75*skin_num_y), 42, 10.5))
+            pygame.draw.rect(screen, skin.inner_box,(window_x/2+(75*skin_num_x)-76, window_y/2-114+(75*skin_num_y), 42, 10.5))
+            pygame.draw.rect(screen, skin.slots,(window_x/2+(75*skin_num_x)-76, window_y/2-103.5+(75*skin_num_y), 42, 10.5),0,-1,-1,-1,10,10)
+            
+            pygame.draw.rect(screen, (255, 255, 255),(window_x/2+(75*skin_num_x)-76, window_y/2-135+(75*skin_num_y), 42, 42), 2, 10)
+            
+            surface = skin_menu_font.render(name, False, (255, 255, 255))
+            screen.blit(surface, (window_x/2+(75*skin_num_x)-55-((surface.get_width())/2), window_y/2-87.5+(75*skin_num_y)))
+
+            inventory_skin.append((rect, skin))
+            
+            skin_num_x += 1
         # ---------------------------------
         screen.blit(background_surface, (15, window_y/2))
         screen.blit(background_hex_surface, (120, window_y/2))
@@ -1002,7 +1023,8 @@ while running:
         
         screen.blit(current_skin_surface, (100-(current_skin_surface.get_width())/2, window_y/2-42))
         screen.blit(skins_title, (window_x/2-(skins_title.get_width())/2, 10))
-
+    elif menu_state == "shop":
+        ...
         
     pygame.display.update()
     dt = clock.tick(60) / 1000
