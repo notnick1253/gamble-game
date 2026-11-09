@@ -24,6 +24,28 @@ headers = {
     "X-GitHub-Api-Version": "2022-11-28",
 }
 
+response = requests.get(
+    f"https://api.github.com/repos/{owner}/{repo}/contents/assets/crates.json",
+    headers=headers,
+    params={"ref": branch},
+    timeout=15,
+)
+response.raise_for_status()
+
+content = base64.b64decode(response.json()["content"]).decode("utf-8")
+crates_json = json.loads(content)
+
+response = requests.get(
+    f"https://api.github.com/repos/{owner}/{repo}/contents/assets/shop.json",
+    headers=headers,
+    params={"ref": branch},
+    timeout=15,
+)
+response.raise_for_status()
+
+content = base64.b64decode(response.json()["content"]).decode("utf-8")
+shop_json = json.loads(content)
+
 
 class saving:
     def __init__(self, saved, notsaved):
@@ -45,17 +67,7 @@ class saving:
         
 class Skin:
     def __init__(self, skin_id):
-        response = requests.get(
-            f"https://api.github.com/repos/{owner}/{repo}/contents/assets/crates.json",
-            headers=headers,
-            params={"ref": branch},
-            timeout=15,
-        )
-        response.raise_for_status()
-
-        content = base64.b64decode(response.json()["content"]).decode("utf-8")
-        data = json.loads(content)
-        colors = data["items"]["skins"][skin_id]["colors"]
+        colors = crates_json["items"]["skins"][skin_id]["colors"]
 
         self.name = skin_id
         self.background = self._parse_rgb(colors["background"])
@@ -77,8 +89,17 @@ class Skin:
         slots_color = self.slots
         current_skin = self.name
             
+class Crate:
+    def __init__(self, crate_id):
+        crate = crates_json["crates"][crate_id]
+
+        self.name = crate["name"]
+        self.price = crate["price"]
+        self.items = crate["items"]
             
 update_check()
+
+print(shop_json)
 
 indicator = saving(True, False)
 #------------------------ Skins --------------------------
@@ -231,8 +252,7 @@ def password_visibility(password, visibility):
     elif not visibility:
         pygame.draw.line(screen, (255,255,255), (window_x/2+75,window_y/2+51.25), (window_x/2+95, window_y/2+63.75), 2)
     return password
-    
-    
+
 def check_accounts(user, password):
     global error, coins, account, account_sha
 
@@ -263,7 +283,6 @@ def check_accounts(user, password):
             return True
         else:
             error = not error
-        
 
 def handle(slots):
 
@@ -297,7 +316,6 @@ def handle(slots):
         10
     )
 
-
 def wahrscheinlichkeiten():
 
     global wahrscheinlichkeiten1
@@ -322,7 +340,6 @@ def wahrscheinlichkeiten():
             random.choice(zahlen)
         )
 
-
 def coin_reback(*werte):
 
     global coins
@@ -344,7 +361,6 @@ def coin_reback(*werte):
     elif höchstes_ergebnis == 4:
         coins += 25
 
-
 def zahlen_bestimmen():
 
     global current_numbers
@@ -356,7 +372,6 @@ def zahlen_bestimmen():
         random.choice(wahrscheinlichkeiten1),
         random.choice(wahrscheinlichkeiten2)
     ]
-
 
 def start_slot():
 
@@ -380,7 +395,6 @@ def start_slot():
 
     slot_timer = 0
     slot_running = True
-
 
 def update_slot(dt):
 
@@ -410,7 +424,6 @@ def update_slot(dt):
         coin_reback(*current_numbers)
 
         slot_running = False
-
 
 def build_slot(size):
 
@@ -557,7 +570,6 @@ def build_slot(size):
             )
         )
 
-
 def switch():
     if slot_size == 5:
         left = (255, 255, 255)
@@ -605,7 +617,6 @@ def switch():
         die_fünf,
         (int(window_x/2+15-fünf_x/2), 13)
         )
-    
 
 def alle_60_sekunden():
     jetzt = pygame.time.get_ticks()
@@ -614,7 +625,6 @@ def alle_60_sekunden():
         # Hier deine Aktion einfügen
         coins_on_file(coins)
         alle_60_sekunden.letzte_ausfuehrung = jetzt
-
 
 def save_indicator(status):
     global save_font, save_font_widht
@@ -699,6 +709,7 @@ while running:
                     for rect, skin in inventory_skin:
                         if rect.collidepoint(event.pos):
                             skin.apply()
+                            indicator.notsaving()
                             break
 
         if event.type == pygame.MOUSEBUTTONUP:
