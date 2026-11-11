@@ -46,7 +46,6 @@ response.raise_for_status()
 content = base64.b64decode(response.json()["content"]).decode("utf-8")
 shop_json = json.loads(content)
 
-
 class saving:
     def __init__(self, saved, notsaved):
         self.saved = saved
@@ -91,20 +90,59 @@ class Skin:
             
 class Crate:
     def __init__(self, crate_id):
-        crate = crates_json["crates"][crate_id]
+        if crate_id in crates_json["special_crates"]:
+            crate = crates_json["special_crates"][crate_id]
+        else:
+            crate = crates_json["crates"][crate_id]
 
         self.name = crate["name"]
         self.price = crate["price"]
         self.items = crate["items"]
             
+class Shop:
+    def __init__(self, row, id) -> None:
+        global shop_layout, shop_max_y
+        
+        shop_max_y = 0
+        
+        self.row = row
+        self.crate = Crate(id)
+        
+        shop_layout.setdefault(row, []).append(self.crate)
+    def create_layout(layout):
+        global crates_rect, shop_max_y
+        for row, crates in layout.items():
+            if not crates:
+                continue
+
+            gap = 10
+            crate_width = (500 - (len(crates) - 1) * gap) / len(crates)
+            crate_height = 100
+            crate_y = 50+((crate_height+gap)*(int(row)-1))
+
+            for index, crate in enumerate(crates):
+                x = 50 + index * (crate_width + gap)
+                crate.rect = (x, crate_y, crate_width, crate_height)
+                
+                crates_rect.append(crate)
+            shop_max_y = max(shop_max_y, crate_y + crate_height + 50)
+
+                
+    def draw(crates):
+        for crate in crates:
+            pygame.draw.rect(screen, (255, 255, 255), (crate.rect[0], crate.rect[1]+scrool, crate.rect[2], crate.rect[3]), 1, 10)
+                
+    
 update_check()
 
-print(shop_json)
-
 indicator = saving(True, False)
-#------------------------ Skins --------------------------
+#-------------------- Skins, Crates ----------------------
 
 all_skins = {}
+shop_layout = {}
+crates_rect = []
+
+scrool = 0
 
 # ------------------ Fenster und Pygame ------------------
 pygame.init()
@@ -178,7 +216,7 @@ naechste_ausfuehrung = pygame.time.get_ticks() + INTERVALL
 
 
 # ------------------ Slot-Spiel ------------------
-zahlen = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+zahlen = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 slot_running = False
 slot_timer = 0
@@ -200,6 +238,12 @@ def load_skins(user):
     
     for skin in user_skins:
         Skin(skin)    
+
+def load_shop(shop):
+    for shop_id, crate_ids in shop["shop"].items():
+        for crate_id in crate_ids:
+            Shop(shop_id, crate_id)
+    Shop.create_layout(shop_layout)
     
 def coins_on_file(anzahl):
     indicator.notsaving()
@@ -293,9 +337,9 @@ def handle(slots):
         background_color,
         (
             window_x / 2 + 160 + slots,
-            40,
+            100,
             window_x - (window_x / 2 + 145) + slots,
-            window_y-80
+            window_y-200
         )
     )
     
@@ -639,6 +683,8 @@ def hex(r, g, b):
 
 alle_60_sekunden.letzte_ausfuehrung = pygame.time.get_ticks()
 
+load_shop(shop_json)
+
 running = True
 
 while running:
@@ -676,6 +722,8 @@ while running:
                             slot_size = 3
                     if save_font_rect.collidepoint(event.pos):
                         indicator.force_save()
+                    if shop_symbol.collidepoint(event.pos):
+                        menu_state = "shop"
                             
                 elif menu_state == "sign in":
                     if eye_rect.collidepoint(event.pos):
@@ -711,6 +759,9 @@ while running:
                             skin.apply()
                             indicator.notsaving()
                             break
+                elif menu_state == "shop":
+                    if exit_button_rect.collidepoint(event.pos):
+                        menu_state = "slot machine"
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -758,8 +809,13 @@ while running:
                     if event.key == pygame.K_ESCAPE:
                         menu_state = "slot machine"
                 else: menu_state = "esc menu"
-            
-    screen.fill("black")    
+                
+        max_scroll = max(0, shop_max_y - screen.get_height())
+        if event.type == pygame.MOUSEWHEEL and menu_state == "shop":
+            scrool += event.y * 20
+            scrool = max(-max_scroll, min(0, scrool))
+
+    screen.fill("black")
 
     if menu_state == "slot machine":
         all_skins[current_skin].apply()
@@ -895,6 +951,13 @@ while running:
             coin_count,
             (10, 10)
         )
+        
+        shop_symbol = pygame.draw.rect(screen, background_color, (window_x-42, 0, 42, 35))
+        pygame.draw.polygon(screen, (255, 255, 255), [(window_x-35, 35), (window_x-15, 35), (window_x-10, 20), (window_x-40, 20)], 1)
+        pygame.draw.rect(screen, (255, 255, 255), (window_x-42, 17, 34, 4), 1, 5)
+        pygame.draw.line(screen, (255, 255, 255), (window_x-30, 23), (window_x-25, 10), 2)
+        pygame.draw.line(screen, (255, 255, 255), (window_x-20, 23), (window_x-25, 10), 2)
+        
 
         handle(slots)
     elif menu_state == "sign in":
@@ -1035,8 +1098,18 @@ while running:
         screen.blit(current_skin_surface, (100-(current_skin_surface.get_width())/2, window_y/2-42))
         screen.blit(skins_title, (window_x/2-(skins_title.get_width())/2, 10))
     elif menu_state == "shop":
-        ...
+        shop_surface = title.render("Shop", False, (255, 255, 255))
         
+        Shop.draw(crates_rect)
+        
+        pygame.draw.rect(screen, (0,0,0), (0,0,window_x,50))
+        
+        # exit btn
+        pygame.draw.rect(screen, (255, 0, 0), exit_button_rect)
+        pygame.draw.line(screen, (255, 255, 255), (15, 15), (35, 35), 3)
+        pygame.draw.line(screen, (255, 255, 255), (35, 15), (15, 35), 3)
+        screen.blit(shop_surface, (window_x/2-shop_surface.get_width()/2, 10))
+
     pygame.display.update()
     dt = clock.tick(60) / 1000
 
