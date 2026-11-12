@@ -157,6 +157,7 @@ class Shop:
         screen.blit(tooltip_surface, tooltip_rect)
 
 class Item:
+    ...
 update_check()
 
 indicator = saving(True, False)
