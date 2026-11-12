@@ -122,7 +122,7 @@ class Shop:
 
             for index, crate in enumerate(crates):
                 x = 50 + index * (crate_width + gap)
-                crate.rect = (x, crate_y, crate_width, crate_height)
+                crate.rect = pygame.Rect(x, crate_y, crate_width, crate_height)
                 
                 crates_rect.append(crate)
             shop_max_y = max(shop_max_y, crate_y + crate_height + 50)
@@ -130,9 +130,33 @@ class Shop:
                 
     def draw(crates):
         for crate in crates:
+            center_x = crate.rect[0] + crate.rect[2] / 2
+            center_y = crate.rect[1] + crate.rect[3] / 2 + scrool
+
             pygame.draw.rect(screen, (255, 255, 255), (crate.rect[0], crate.rect[1]+scrool, crate.rect[2], crate.rect[3]), 1, 10)
-                
-    
+            
+            crate_name_surface = skin_menu_font.render(crate.name, False, (255, 255, 255))
+            crate_price_surface = skin_menu_font.render(f"{crate.price} coins", False, (255, 255, 255))
+
+            pygame.draw.rect(screen, (255, 255, 255), (center_x - 20, center_y -20, 40, 40), 1)
+            pygame.draw.rect(screen, (255, 255, 255), (center_x - 15, center_y -15, 30, 30), 1)
+            pygame.draw.line(screen, (255, 255, 255), (center_x - 15, center_y - 15), (center_x + 15, center_y + 15), 1)
+            pygame.draw.line(screen, (255, 255, 255), (center_x + 15, center_y - 15), (center_x - 15, center_y + 15), 1)
+
+            screen.blit(crate_name_surface, (crate.rect[0] + crate.rect[2] / 2 - crate_name_surface.get_width() / 2, crate.rect[1] + 10 + scrool))
+            screen.blit(crate_price_surface, (crate.rect[0] + crate.rect[2] / 2 - crate_price_surface.get_width() / 2, crate.rect[1] + crate.rect[3] - 20+ scrool))
+    def tooltip(crate):
+        center_x = crate.rect[0] + crate.rect[2] / 2
+        center_y = crate.rect[1] + crate.rect[3] / 2 + scrool
+
+        tooltip_text = f"Items: {', '.join(crate.items)}"
+        tooltip_surface = skin_menu_fontt.render(tooltip_text, False, (255, 255, 255))
+        
+        tooltip_rect = tooltip_surface.get_rect(center=(center_x, center_y - 40))
+        pygame.draw.rect(screen, (0,0,0), tooltip_rect.inflate(10, 10))
+        screen.blit(tooltip_surface, tooltip_rect)
+
+class Item:
 update_check()
 
 indicator = saving(True, False)
@@ -174,6 +198,7 @@ error = False
 
 menu_state = "sign in"
 
+tooltip = False
 
 # ------------------ Rechtecke und Positionen ------------------
 username_box_rect = pygame.rect.Rect(window_x / 2 - 100, window_y / 2, 200, 35)
@@ -378,7 +403,7 @@ def wahrscheinlichkeiten():
         "rechts2": [1, 2, 3, 4, 5, 6, 7, 8, 9, "Y", "S"]
     }
 
-def coin_reback(*werte):
+def coin_reback(werte):
 
     global coins
 
@@ -464,9 +489,9 @@ def update_slot(dt):
 
         # Gewinn berechnen
         if slot_size==3:
-            coin_reback(*current_numbers_3)
+            coin_reback(current_numbers_3)
         if slot_size == 5:
-            coin_reback(*current_numbers_5)
+            coin_reback(current_numbers_5)
 
         slot_running = False
 
@@ -758,6 +783,10 @@ while running:
                 elif menu_state == "shop":
                     if exit_button_rect.collidepoint(event.pos):
                         menu_state = "slot machine"
+                    for crate in crates_rect:
+                        if crate.rect.collidepoint(event.pos[0], event.pos[1]-scrool):
+                            tooltip = True
+                            tooltip_crate = crate
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -1013,7 +1042,7 @@ while running:
             error_widht = error_message_surface.get_width()
             screen.blit(error_message_surface, (window_x/2-error_widht/2,window_y/2-20))
     elif menu_state == "esc menu":
-        screen.fill("black")
+        screen.fill(background_color)
         
         settings_btn = pygame.draw.rect(screen, (255,255,255), (window_x/2-75, window_y/2-25, 150, 50), 1)
         skins_btn = pygame.draw.rect(screen, (255,255,255), (window_x/2-75, window_y/2+30, 150, 50), 1)
@@ -1130,6 +1159,9 @@ while running:
         pygame.draw.line(screen, (255, 255, 255), (15, 15), (35, 35), 3)
         pygame.draw.line(screen, (255, 255, 255), (35, 15), (15, 35), 3)
         screen.blit(shop_surface, (window_x/2-shop_surface.get_width()/2, 10))
+
+        if tooltip:
+            Shop.tooltip(tooltip_crate)
 
     pygame.display.update()
     dt = clock.tick(60) / 1000
