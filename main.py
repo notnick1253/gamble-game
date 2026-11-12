@@ -224,7 +224,8 @@ slot_duration = 1.5
 
 # 3 oder 5 Slots
 slot_size = 3
-current_numbers = [7, 7, 7, 7, 7]
+current_numbers_3 = [7, 7, 7]
+current_numbers_5 = [7, 7, 7, 7, 7]
 
 dragging = False
 returning = False
@@ -361,28 +362,21 @@ def handle(slots):
     )
 
 def wahrscheinlichkeiten():
-
-    global wahrscheinlichkeiten1
-    global wahrscheinlichkeiten2
-    global wahrscheinlichkeiten3
-
-    wahrscheinlichkeiten1 = []
-    wahrscheinlichkeiten2 = []
-    wahrscheinlichkeiten3 = []
-
-    for _ in range(12):
-
-        wahrscheinlichkeiten1.append(
-            random.choice(zahlen)
-        )
-
-        wahrscheinlichkeiten2.append(
-            random.choice(zahlen)
-        )
-
-        wahrscheinlichkeiten3.append(
-            random.choice(zahlen)
-        )
+    
+    global wahrscheinlichkeiten_3, wahrscheinlichkeiten_5
+    
+    wahrscheinlichkeiten_3= {
+        "links": [1, 2, 3, 4, 5, 6, 7, 8, 9, "X"],
+        "mitte": [1, 2, 3, 4, 5, 6, 7, 8, 9, "O"],
+        "rechts": [1, 2, 3, 4, 5, 6, 7, 8, 9, "X"]
+    }
+    wahrscheinlichkeiten_5= {
+        "links2": [1, 2, 3, 4, 5, 6, 7, 8, 9, "L", "X"],
+        "links": [1, 2, 3, 4, 5, 6, 7, 8, 9, "U", "-"],
+        "mitte": [1, 2, 3, 4, 5, 6, 7, 8, 9, "C", "M"],
+        "rechts": [1, 2, 3, 4, 5, 6, 7, 8, 9, "K", "A"],
+        "rechts2": [1, 2, 3, 4, 5, 6, 7, 8, 9, "Y", "S"]
+    }
 
 def coin_reback(*werte):
 
@@ -407,14 +401,19 @@ def coin_reback(*werte):
 
 def zahlen_bestimmen():
 
-    global current_numbers
+    global current_numbers_3, current_numbers_5
 
-    current_numbers = [
-        random.choice(wahrscheinlichkeiten1),
-        random.choice(wahrscheinlichkeiten2),
-        random.choice(wahrscheinlichkeiten3),
-        random.choice(wahrscheinlichkeiten1),
-        random.choice(wahrscheinlichkeiten2)
+    current_numbers_3 = [
+        random.choice(wahrscheinlichkeiten_3["links"]),
+        random.choice(wahrscheinlichkeiten_3["mitte"]),
+        random.choice(wahrscheinlichkeiten_3["rechts"])
+    ]
+    current_numbers_5 = [
+        random.choice(wahrscheinlichkeiten_5["links2"]),
+        random.choice(wahrscheinlichkeiten_5["links"]),
+        random.choice(wahrscheinlichkeiten_5["mitte"]),
+        random.choice(wahrscheinlichkeiten_5["rechts"]),
+        random.choice(wahrscheinlichkeiten_5["rechts2"])
     ]
 
 def start_slot():
@@ -444,7 +443,7 @@ def update_slot(dt):
 
     global slot_timer
     global slot_running
-    global current_numbers
+    global current_numbers_3, current_numbers_5
 
     if not slot_running:
         return
@@ -464,8 +463,10 @@ def update_slot(dt):
         zahlen_bestimmen()
 
         # Gewinn berechnen
-
-        coin_reback(*current_numbers)
+        if slot_size==3:
+            coin_reback(*current_numbers_3)
+        if slot_size == 5:
+            coin_reback(*current_numbers_5)
 
         slot_running = False
 
@@ -688,15 +689,10 @@ load_shop(shop_json)
 running = True
 
 while running:
-    alle_60_sekunden()
+    window_x = screen.get_width()
+    window_y = screen.get_height()
     
-    if menu_state == "sign in":
-        if not username_input and not typing_user:
-            default_user = True
-            username_input = "username"
-        if not password_input and not typing_password:
-            default_password = True
-            password_input = "password"
+    alle_60_sekunden()
 
     for event in pygame.event.get():
 
@@ -859,77 +855,95 @@ while running:
         )
 
         creator_x = creator_schrift.get_width()
+        
+        if slot_size == 3:
+            zahl1 = schrift.render(
+                str(current_numbers_3[0]),
+                True,
+                (255, 255, 255)
+            )
 
-        zahl1 = schrift.render(
-            str(current_numbers[0]),
-            True,
-            (255, 255, 255)
-        )
+            zahl2 = schrift.render(
+                str(current_numbers_3[1]),
+                True,
+                (255, 255, 255)
+            )
 
-        zahl2 = schrift.render(
-            str(current_numbers[1]),
-            True,
-            (255, 255, 255)
-        )
+            zahl3 = schrift.render(
+                str(current_numbers_3[2]),
+                True,
+                (255, 255, 255)
+            )
 
-        zahl3 = schrift.render(
-            str(current_numbers[2]),
-            True,
-            (255, 255, 255)
-        )
+            screen.blit(
+                zahl1,
+                (window_x / 2 - 80-zahl1.get_width()/2, window_y / 2 - 30)
+            )
 
-        screen.blit(
-            zahl1,
-            (window_x / 2 - 100, window_y / 2 - 30)
-        )
+            screen.blit(
+                zahl2,
+                (window_x / 2 -zahl2.get_width()/2, window_y / 2 - 30)
+            )
 
-        screen.blit(
-            zahl2,
-            (window_x / 2 - 20, window_y / 2 - 30)
-        )
+            screen.blit(
+                zahl3,
+                (window_x / 2 + 80-zahl3.get_width()/2, window_y / 2 - 30)
+            )
 
-        screen.blit(
-            zahl3,
-            (window_x / 2 + 60, window_y / 2 - 30)
-        )
+        elif slot_size == 5:
+            zahl1 = schrift.render(
+                str(current_numbers_5[0]),
+                True,
+                (255, 255, 255)
+            )
 
-        if slot_size == 5:
+            zahl2 = schrift.render(
+                str(current_numbers_5[1]),
+                True,
+                (255, 255, 255)
+            )
 
+            zahl3 = schrift.render(
+                str(current_numbers_5[2]),
+                True,
+                (255, 255, 255)
+            )                 
+            
             zahl4 = schrift.render(
-                str(current_numbers[3]),
+                str(current_numbers_5[3]),
                 True,
                 (255, 255, 255)
             )
 
             zahl5 = schrift.render(
-                str(current_numbers[4]),
+                str(current_numbers_5[4]),
                 True,
                 (255, 255, 255)
             )
 
             screen.blit(
-                zahl4,
-                (window_x / 2 - 180, window_y / 2 - 30)
-            )
-
-            screen.blit(
                 zahl1,
-                (window_x / 2 - 100, window_y / 2 - 30)
+                (window_x / 2 - 160-zahl1.get_width()/2, window_y / 2 - 30)
             )
 
             screen.blit(
                 zahl2,
-                (window_x / 2 - 20, window_y / 2 - 30)
+                (window_x / 2 - 80-zahl2.get_width()/2, window_y / 2 - 30)
             )
 
             screen.blit(
                 zahl3,
-                (window_x / 2 + 60, window_y / 2 - 30)
+                (window_x / 2 -zahl3.get_width()/2, window_y / 2 - 30)
+            )
+
+            screen.blit(
+                zahl4,
+                (window_x / 2 + 80-zahl4.get_width()/2, window_y / 2 - 30)
             )
 
             screen.blit(
                 zahl5,
-                (window_x / 2 + 140, window_y / 2 - 30)
+                (window_x / 2 + 160-zahl5.get_width()/2, window_y / 2 - 30)
             )
 
         creator_x = creator_schrift.get_width()
@@ -961,6 +975,13 @@ while running:
 
         handle(slots)
     elif menu_state == "sign in":
+        if not username_input and not typing_user:
+            default_user = True
+            username_input = "username"
+        if not password_input and not typing_password:
+            default_password = True
+            password_input = "password"
+            
         title_suface = title.render(
             "Sign In", True, (255, 255, 255)
         )
