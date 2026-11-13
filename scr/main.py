@@ -158,7 +158,7 @@ class Shop:
 
 class Item:
     ...
-update_check()
+# update_check()
 
 indicator = saving(True, False)
 #-------------------- Skins, Crates ----------------------
