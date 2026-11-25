@@ -5,6 +5,16 @@ import requests
 import base64
 from update import update_check
 
+# ------------------ Fenster und Pygame ------------------
+pygame.init()
+
+window_x = 600
+window_y = 400
+
+screen = pygame.display.set_mode((window_x, window_y))
+pygame.display.set_caption("Gamba Gamba V.2")
+
+clock = pygame.time.Clock()
 
 # ------------------ GitHub ------------------
 token = ""
@@ -45,6 +55,8 @@ response.raise_for_status()
 
 content = base64.b64decode(response.json()["content"]).decode("utf-8")
 shop_json = json.loads(content)
+
+schrift = pygame.font.Font(None, 100)
 
 class saving:
     def __init__(self, saved, notsaved):
@@ -145,6 +157,7 @@ class Shop:
 
             screen.blit(crate_name_surface, (crate.rect[0] + crate.rect[2] / 2 - crate_name_surface.get_width() / 2, crate.rect[1] + 10 + scrool))
             screen.blit(crate_price_surface, (crate.rect[0] + crate.rect[2] / 2 - crate_price_surface.get_width() / 2, crate.rect[1] + crate.rect[3] - 20+ scrool))
+            
     def tooltip(crate):
         center_x = crate.rect[0] + crate.rect[2] / 2
         center_y = crate.rect[1] + crate.rect[3] / 2 + scrool
@@ -158,6 +171,32 @@ class Shop:
 
 class Item:
     ...
+
+class Slot_system:
+    def __init__(self, name, slot, symbols_info):
+        
+        self.symbols_info = symbols_info
+        self.name = name
+        self.slot = self.create_slot()
+        
+        for item in self.slot:
+            if (self.slot.index(item)+1)%2 == 1:
+                print("surface: "+str(item))
+            else:
+                print("weight: "+item)
+    
+    def create_slot(self):
+        temp = []
+        for symbol, type, weight in zip(self.symbols_info["symbols"], self.symbols_info["type"], self.symbols_info["weight"]):
+            if type == "img":
+                temp.append(pygame.image.load(f'gamble game/assets/{symbol}.svg'))
+                temp.append(weight)
+            elif type == "text":
+                temp.append(schrift.render(symbol, False, (255, 255, 255)))
+                temp.append(weight)
+        return temp
+
+
 # update_check()
 
 indicator = saving(True, False)
@@ -169,21 +208,15 @@ crates_rect = []
 
 scrool = 0
 
-# ------------------ Fenster und Pygame ------------------
-pygame.init()
+#----------------------- slot system ---------------------
 
-window_x = 600
-window_y = 400
+slot3_info = {
+    "symbols": ["Cherrie", "Dollar", "Grapes", "Strawberry", "7"],
+    "type": ["img", "img", "img", "img", "text"],
+    "weight": ["40", "20", "10", "20", "10"]
+}
 
-screen = pygame.display.set_mode((window_x, window_y))
-clock = pygame.time.Clock()
-pygame.display.set_caption("Sign In")
-
-screen = pygame.display.set_mode((window_x, window_y))
-pygame.display.set_caption("Gamba Gamba V.2")
-
-clock = pygame.time.Clock()
-
+slot3 = Slot_system("slot3", 3, slot3_info)
 
 # ------------------ Eingaben und Status ------------------
 username_input = "username"
@@ -228,7 +261,6 @@ error_message_surface = error_font.render(
     (255, 0, 0)
 )
 
-schrift = pygame.font.Font(None, 100)
 hdhjs = pygame.font.Font(None, 35)
 creator = pygame.font.Font(None, 20)
 switch_font = pygame.font.Font(None, 43)
@@ -392,16 +424,16 @@ def wahrscheinlichkeiten():
     global wahrscheinlichkeiten_3, wahrscheinlichkeiten_5
     
     wahrscheinlichkeiten_3= {
-        "links": [1, 2, 3, 4, 5, 6, 7, 8, 9, "X"],
-        "mitte": [1, 2, 3, 4, 5, 6, 7, 8, 9, "O"],
-        "rechts": [1, 2, 3, 4, 5, 6, 7, 8, 9, "X"]
+        "links":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁"],
+        "mitte":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁"],
+        "rechts": ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁"]
     }
     wahrscheinlichkeiten_5= {
-        "links2": [1, 2, 3, 4, 5, 6, 7, 8, 9, "L", "X"],
-        "links": [1, 2, 3, 4, 5, 6, 7, 8, 9, "U", "-"],
-        "mitte": [1, 2, 3, 4, 5, 6, 7, 8, 9, "C", "M"],
-        "rechts": [1, 2, 3, 4, 5, 6, 7, 8, 9, "K", "A"],
-        "rechts2": [1, 2, 3, 4, 5, 6, 7, 8, 9, "Y", "S"]
+        "links2":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "L"],
+        "links":   ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "U"],
+        "mitte":   ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "C"],
+        "rechts":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "K"],
+        "rechts2": ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "Y"]
     }
 
 def coin_reback(werte):
@@ -715,8 +747,6 @@ load_shop(shop_json)
 running = True
 
 while running:
-    window_x = screen.get_width()
-    window_y = screen.get_height()
     
     alle_60_sekunden()
 
