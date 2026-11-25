@@ -5,6 +5,8 @@ import requests
 import base64
 from update import update_check
 
+# halo
+
 # ------------------ Fenster und Pygame ------------------
 pygame.init()
 
