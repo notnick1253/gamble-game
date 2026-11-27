@@ -177,24 +177,58 @@ class Slot_system:
         
         self.symbols_info = symbols_info
         self.name = name
+        self.number = slot
         self.slot = self.create_slot()
-        
-        for item in self.slot:
-            if (self.slot.index(item)+1)%2 == 1:
-                print("surface: "+str(item))
-            else:
-                print("weight: "+item)
     
     def create_slot(self):
         temp = []
-        for symbol, type, weight in zip(self.symbols_info["symbols"], self.symbols_info["type"], self.symbols_info["weight"]):
+        for symbol, type, weight, size in zip(self.symbols_info["symbols"], self.symbols_info["type"], self.symbols_info["weight"], self.symbols_info["size"]):
             if type == "img":
-                temp.append(pygame.image.load(f'gamble game/assets/{symbol}.svg'))
+                temp.append(pygame.transform.smoothscale(pygame.image.load(f'gamble game/assets/{symbol}.svg'),size))
                 temp.append(weight)
             elif type == "text":
                 temp.append(schrift.render(symbol, False, (255, 255, 255)))
                 temp.append(weight)
         return temp
+    def draw(self):
+        global test
+        for i in range((self.number-1)//2*80*-1, (self.number-1)//2*80+80, 80):
+            start_y_symbol = window_y/2 + test
+            
+            for item in self.slot:
+                if not type(item)is int:
+                    if self.slot.index(item)/2==self.symbols_info["symbols"].index("Dollar"):
+                        break
+                    start_y_symbol -= item.get_height()+10
+            for item in self.slot:
+                if not type(item)is int:
+                    
+                    if not start_y_symbol > window_y/2+100:
+                        screen.blit(item, (window_x/2+i-item.get_width()/2,start_y_symbol-item.get_height()/2))
+                        start_y_symbol += item.get_height()+10
+                    else:
+                        for itemm in self.slot:
+                            if not type(itemm)is int:
+                                start_y_symbol -= itemm.get_height()+10
+                        screen.blit(item, (window_x/2+1-item.get_width()/2,start_y_symbol-item.get_height()/2))
+                        start_y_symbol += item.get_height()+10
+            pygame.draw.rect(screen, background_color, (window_x/2+i-35, 0, 70, 115))
+            pygame.draw.rect(screen, outer_box_color, (window_x/2+i-35, window_y/2-85, 70, 25))
+            pygame.draw.rect(screen, inner_box_color, (window_x/2+i-35, window_y/2-60, 70, 15))
+            pygame.draw.rect(screen, background_color, (window_x/2+i-35, window_y/2+70, 70, 60))
+            pygame.draw.rect(screen, inner_box_color, (window_x/2+i-35, window_y/2+55, 70, 15))
+          
+    def start(self):
+        global test
+        temp=0
+        for item in self.slot:
+            if not type(item)is int:
+                temp += item.get_height()+10
+        if test > temp:
+            test = 0
+        test += 5
+            
+            
 
 
 # update_check()
@@ -210,13 +244,26 @@ scrool = 0
 
 #----------------------- slot system ---------------------
 
+test = 0
+
 slot3_info = {
     "symbols": ["Cherrie", "Dollar", "Grapes", "Strawberry", "7"],
     "type": ["img", "img", "img", "img", "text"],
-    "weight": ["40", "20", "10", "20", "10"]
+    "weight": [40, 20, 10, 20, 10],
+    "size": [(64,64), (48, 48), (64,64), (64,64), None]
+}
+
+
+slot5_info = {
+    "symbols": ["Cherrie", "Dollar", "Grapes", "Strawberry", "7", ("X", "-", "M", "A", "S")],
+    "type": ["img", "img", "img", "img", "text", "text-combi"],
+    "weight": [40, 20, 10, 20, 5, 5],
+    "size": [(64,64), (48, 48), (64,64), (64,64), None, None]
 }
 
 slot3 = Slot_system("slot3", 3, slot3_info)
+
+slot5 = Slot_system("slot5", 5, slot5_info)
 
 # ------------------ Eingaben und Status ------------------
 username_input = "username"
@@ -419,115 +466,6 @@ def handle(slots):
         10
     )
 
-def wahrscheinlichkeiten():
-    
-    global wahrscheinlichkeiten_3, wahrscheinlichkeiten_5
-    
-    wahrscheinlichkeiten_3= {
-        "links":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁"],
-        "mitte":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁"],
-        "rechts": ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁"]
-    }
-    wahrscheinlichkeiten_5= {
-        "links2":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "L"],
-        "links":   ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "U"],
-        "mitte":   ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "C"],
-        "rechts":  ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "K"],
-        "rechts2": ["7", "💸", "🍇", "🍉", "🍒", "🍓", "🎁", "Y"]
-    }
-
-def coin_reback(werte):
-
-    global coins
-
-    counts = {}
-
-    for wert in werte:
-
-        if wert in counts:
-            counts[wert] += 1
-        else:
-            counts[wert] = 1
-
-    höchstes_ergebnis = max(counts.values())
-
-    if höchstes_ergebnis == 5:
-        coins += 100
-
-    elif höchstes_ergebnis == 4:
-        coins += 25
-
-def zahlen_bestimmen():
-
-    global current_numbers_3, current_numbers_5
-
-    current_numbers_3 = [
-        random.choice(wahrscheinlichkeiten_3["links"]),
-        random.choice(wahrscheinlichkeiten_3["mitte"]),
-        random.choice(wahrscheinlichkeiten_3["rechts"])
-    ]
-    current_numbers_5 = [
-        random.choice(wahrscheinlichkeiten_5["links2"]),
-        random.choice(wahrscheinlichkeiten_5["links"]),
-        random.choice(wahrscheinlichkeiten_5["mitte"]),
-        random.choice(wahrscheinlichkeiten_5["rechts"]),
-        random.choice(wahrscheinlichkeiten_5["rechts2"])
-    ]
-
-def start_slot():
-
-    global coins
-    global slot_running
-    global slot_timer
-
-    if coins < 2:
-        return
-
-    if slot_running:
-        return
-
-    coins -= 2
-
-    indicator.notsaving()
-
-    wahrscheinlichkeiten()
-
-    zahlen_bestimmen()
-
-    slot_timer = 0
-    slot_running = True
-
-def update_slot(dt):
-
-    global slot_timer
-    global slot_running
-    global current_numbers_3, current_numbers_5
-
-    if not slot_running:
-        return
-
-    slot_timer += dt
-
-    if slot_timer < slot_duration:
-
-        # Animation
-
-        zahlen_bestimmen()
-
-    else:
-
-        # Letzte Zahlen
-
-        zahlen_bestimmen()
-
-        # Gewinn berechnen
-        if slot_size==3:
-            coin_reback(current_numbers_3)
-        if slot_size == 5:
-            coin_reback(current_numbers_5)
-
-        slot_running = False
-
 def build_slot(size):
 
     global slots
@@ -590,6 +528,8 @@ def build_slot(size):
                 100
             )
         )
+        
+        slot3.draw()
 
 
     elif size == 5:
@@ -672,6 +612,8 @@ def build_slot(size):
                 100
             )
         )
+        
+        slot5.draw()
 
 def switch():
     if slot_size == 5:
@@ -685,7 +627,9 @@ def switch():
         block = (window_x/2-26, 14, 22, 25)
 
         
-    screen.fill(background_color, (window_x/2-30, 10, 60, 33))
+    screen.fill(background_color, (window_x/2-30, 0, 60, 115))
+    pygame.draw.rect(screen, outer_box_color, (window_x/2-35, window_y/2-85, 70, 25))
+    pygame.draw.rect(screen, inner_box_color, (window_x/2-35, window_y/2-60, 70, 15))
     pygame.draw.rect(
         screen,
         (255, 255, 255),
@@ -829,8 +773,6 @@ while running:
                         dragging = False
                         returning = True
 
-                        start_slot()
-                        
         if event.type == pygame.KEYDOWN and typing_user:
             if menu_state == "sign in":
                 if default_user:
@@ -878,6 +820,8 @@ while running:
         screen.fill(background_color)
         if dragging:
 
+            slot3.start()
+            
             mouse_y = pygame.mouse.get_pos()[1]
 
             knob_y = mouse_y
@@ -899,13 +843,9 @@ while running:
                 knob_y = lever_top
                 returning = False
 
-        update_slot(dt)
-
         # Hier stellst du 3 oder 5 Slots ein
         build_slot(slot_size)
-        
-        switch()
-        
+                
         save_indicator(None)
         
         creator_schrift = creator.render(
@@ -916,96 +856,6 @@ while running:
 
         creator_x = creator_schrift.get_width()
         
-        if slot_size == 3:
-            zahl1 = schrift.render(
-                str(current_numbers_3[0]),
-                True,
-                (255, 255, 255)
-            )
-
-            zahl2 = schrift.render(
-                str(current_numbers_3[1]),
-                True,
-                (255, 255, 255)
-            )
-
-            zahl3 = schrift.render(
-                str(current_numbers_3[2]),
-                True,
-                (255, 255, 255)
-            )
-
-            screen.blit(
-                zahl1,
-                (window_x / 2 - 80-zahl1.get_width()/2, window_y / 2 - 30)
-            )
-
-            screen.blit(
-                zahl2,
-                (window_x / 2 -zahl2.get_width()/2, window_y / 2 - 30)
-            )
-
-            screen.blit(
-                zahl3,
-                (window_x / 2 + 80-zahl3.get_width()/2, window_y / 2 - 30)
-            )
-
-        elif slot_size == 5:
-            zahl1 = schrift.render(
-                str(current_numbers_5[0]),
-                True,
-                (255, 255, 255)
-            )
-
-            zahl2 = schrift.render(
-                str(current_numbers_5[1]),
-                True,
-                (255, 255, 255)
-            )
-
-            zahl3 = schrift.render(
-                str(current_numbers_5[2]),
-                True,
-                (255, 255, 255)
-            )                 
-            
-            zahl4 = schrift.render(
-                str(current_numbers_5[3]),
-                True,
-                (255, 255, 255)
-            )
-
-            zahl5 = schrift.render(
-                str(current_numbers_5[4]),
-                True,
-                (255, 255, 255)
-            )
-
-            screen.blit(
-                zahl1,
-                (window_x / 2 - 160-zahl1.get_width()/2, window_y / 2 - 30)
-            )
-
-            screen.blit(
-                zahl2,
-                (window_x / 2 - 80-zahl2.get_width()/2, window_y / 2 - 30)
-            )
-
-            screen.blit(
-                zahl3,
-                (window_x / 2 -zahl3.get_width()/2, window_y / 2 - 30)
-            )
-
-            screen.blit(
-                zahl4,
-                (window_x / 2 + 80-zahl4.get_width()/2, window_y / 2 - 30)
-            )
-
-            screen.blit(
-                zahl5,
-                (window_x / 2 + 160-zahl5.get_width()/2, window_y / 2 - 30)
-            )
-
         creator_x = creator_schrift.get_width()
                 
         screen.blit(save_font, (window_x-save_font_widht-10, window_y-20))
@@ -1026,6 +876,8 @@ while running:
             (10, 10)
         )
         
+        switch()
+
         shop_symbol = pygame.draw.rect(screen, background_color, (window_x-42, 0, 42, 35))
         pygame.draw.polygon(screen, (255, 255, 255), [(window_x-35, 35), (window_x-15, 35), (window_x-10, 20), (window_x-40, 20)], 1)
         pygame.draw.rect(screen, (255, 255, 255), (window_x-42, 17, 34, 4), 1, 5)
